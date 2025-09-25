@@ -8,4 +8,4 @@ lambda function URL for getProductsById : https://4ra1ox9xgf.execute-api.ap-sout
 
 # Frontend Integration
 
-Both the endpoints are integrated in frontend app here :d1baeafe5g0fnf.cloudfront.net
+Both the endpoints are integrated in frontend app here : d1baeafe5g0fnf.cloudfront.net
