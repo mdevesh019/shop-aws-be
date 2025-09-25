@@ -1,3 +1,12 @@
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  ScanCommand,
+} = require("@aws-sdk/lib-dynamodb");
+
+const client = new DynamoDBClient({ region: process.env.AWS_REGION });
+const ddbDocClient = DynamoDBDocumentClient.from(client);
+
 exports.main = async (event: any) => {
   console.log("Event:", JSON.stringify(event));
 
@@ -11,41 +20,40 @@ exports.main = async (event: any) => {
     ? origin
     : allowedOrigins[0];
 
-  const products = [
-    {
-      id: 1,
-      title: "Laptop",
-      description: "This is a Laptop, pls buy it!",
-      price: 700,
-    },
-    {
-      id: 2,
-      title: "Phone",
-      description: "This is a Phone, pls buy it!",
-      price: 400,
-    },
-    {
-      id: 3,
-      title: "Tablet",
-      description: "This is a Tablet, pls buy it!",
-      price: 300,
-    },
-    {
-      id: 4,
-      title: "Monitor",
-      description: "This is a Monitor, pls buy it!",
-      price: 450,
-    },
-  ];
+  try {
+    // Fetch products
+    const productsResult = await ddbDocClient.send(
+      new ScanCommand({ TableName: process.env.PRODUCTS_TABLE })
+    );
+    const products = productsResult.Items || [];
 
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": allowOrigin,
-      "Access-Control-Allow-Headers": "*",
-      "Access-Control-Allow-Methods": "*",
-    },
-    body: JSON.stringify(products),
-  };
+    // Fetch stock
+    const stockResult = await ddbDocClient.send(
+      new ScanCommand({ TableName: process.env.STOCK_TABLE })
+    );
+    const stock = stockResult.Items || [];
+
+    // Merge stock into products
+    const productsWithStock = products.map((p: any) => {
+      const s = stock.find((st: any) => st.product_id === p.id);
+      return { ...p, stock: s?.count || 0 };
+    });
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": allowOrigin,
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Methods": "*",
+      },
+      body: JSON.stringify(productsWithStock),
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Internal Server Error" }),
+    };
+  }
 };
