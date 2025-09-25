@@ -40,7 +40,7 @@ export class ShopAwsBeStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: [
           "http://localhost:3000",
-          "https://d1baeafe5g0fnf.cloudfront.net/",
+          "https://d1baeafe5g0fnf.cloudfront.net",
         ],
         allowMethods: apigateway.Cors.ALL_METHODS,
       },
