@@ -1,11 +1,15 @@
-# Task 3.1
+# Task 4.1
 
-lambda function URL for getProductsList : https://4ra1ox9xgf.execute-api.ap-south-1.amazonaws.com/dev/products
+/scripts/seed.js is expected scirpt to insert dummy data in the DB as requested
 
-# Task 3.2
+# Task 4.2
 
-lambda function URL for getProductsById : https://4ra1ox9xgf.execute-api.ap-south-1.amazonaws.com/dev/products/2
+/lib/lambda/porducts.ts is the file to get a list of products from the database (joined stock and products tables).
+
+# Task 4.3
+
+/lib/lambda/createProduct.ts is the expected lambda function to POST the product on /products endpoint. Below is the API Gateway URL for the same : https://67sufepsp0.execute-api.ap-south-1.amazonaws.com/dev/products/
 
 # Frontend Integration
 
-Both the endpoints are integrated in frontend app here : d1baeafe5g0fnf.cloudfront.net
+Both the endpoints are integrated in frontend app here : https://d1baeafe5g0fnf.cloudfront.net

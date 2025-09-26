@@ -57,12 +57,35 @@ export class Task4ShopAwsBeStack extends cdk.Stack {
       },
     });
 
+    // Lambda for /createProduct
+    const createProductLambda = new lambda.Function(
+      this,
+      "createProduct-lambda",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        memorySize: 1024,
+        timeout: cdk.Duration.seconds(5),
+        handler: "createProduct.main",
+        code: lambda.Code.fromAsset(path.join(__dirname, "lambda")),
+        environment: {
+          PRODUCTS_TABLE: productsTable.tableName,
+          STOCK_TABLE: stockTable.tableName,
+          REGION: "ap-south-1",
+        },
+      }
+    );
+
     // Grant Lambda read access to DynamoDB tables
     productsTable.grantReadData(productsLambda);
     stockTable.grantReadData(productsLambda);
 
     productsTable.grantReadData(productByIdLambda);
     stockTable.grantReadData(productByIdLambda);
+
+    productsTable.grantWriteData(createProductLambda);
+    productsTable.grantReadData(createProductLambda);
+    stockTable.grantWriteData(createProductLambda);
+    stockTable.grantReadData(createProductLambda);
 
     const api = new apigateway.RestApi(this, "shop-aws-be-api", {
       restApiName: "Shop API Gateway",
@@ -95,6 +118,10 @@ export class Task4ShopAwsBeStack extends cdk.Stack {
     productsResource.addMethod(
       "GET",
       new apigateway.LambdaIntegration(productsLambda)
+    );
+    productsResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(createProductLambda)
     );
 
     // /products/{productId} route
