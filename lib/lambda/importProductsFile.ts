@@ -25,7 +25,7 @@ exports.main = async (event: any) => {
       ContentType: "text/csv",
     });
 
-    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 60 });
 
     return {
       statusCode: 200,
