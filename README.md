@@ -1,15 +1,17 @@
-# Task 4.1
+# Task 5.1
 
-/scripts/seed.js is expected scirpt to insert dummy data in the DB as requested
+- new stack named ImportServiceStack is added with file name `import-service-stack.ts`
+- an S3 bucket has been added in ImportServiceStack with folder name `uploaded`
 
-# Task 4.2
+# Task 5.2
 
-/lib/lambda/porducts.ts is the file to get a list of products from the database (joined stock and products tables).
+- Lambda function named `importProductsFile` added with proper functional logic and api gateway to upload a file
+- Lambda function returns a signed URL, which front end uses to upload the file. FE url is provided below.
 
-# Task 4.3
+# Task 5.3
 
-/lib/lambda/createProduct.ts is the expected lambda function to POST the product on /products endpoint. Below is the API Gateway URL for the same : https://67sufepsp0.execute-api.ap-south-1.amazonaws.com/dev/products/
+- Lambda function named `importFileParser` has beed added with S3 event configuration and logic to parse the CSV file
 
 # Frontend Integration
 
-Both the endpoints are integrated in frontend app here : https://d1baeafe5g0fnf.cloudfront.net
+Endpoints are integrated in frontend app here : https://d1baeafe5g0fnf.cloudfront.net
