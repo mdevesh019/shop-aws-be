@@ -1,16 +1,16 @@
-# Task 5.1
+# Task 6.1
 
-- new stack named ImportServiceStack is added with file name `import-service-stack.ts`
-- an S3 bucket has been added in ImportServiceStack with folder name `uploaded`
+- created a new lambda `catalogBatchProcessLambda` which will be triggered by SQS event
+- created `catalogItemsQueue` queue to trigger same lambda
 
-# Task 5.2
+# Task 6.2
 
-- Lambda function named `importProductsFile` added with proper functional logic and api gateway to upload a file
-- Lambda function returns a signed URL, which front end uses to upload the file. FE url is provided below.
+- Updated `importFileParser` file to send CSV records to SQS.
 
-# Task 5.3
+# Task 6.3
 
-- Lambda function named `importFileParser` has beed added with S3 event configuration and logic to parse the CSV file
+- Created an SNS topic `createProductTopic` and email subscription.
+- Updated `catalogBatchProcess` lambda function to send SNS notification on product create.
 
 # Frontend Integration
 
