@@ -7,9 +7,17 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as path from "path";
 import { Construct } from "constructs";
 
+import * as sqs from "aws-cdk-lib/aws-sqs";
+
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const catalogItemsQueue = sqs.Queue.fromQueueArn(
+      this,
+      "ImportedCatalogQueue",
+      cdk.Fn.importValue("CatalogQueueArn")
+    );
 
     const bucket = new s3.Bucket(this, "Task5Bucket", {
       versioned: true,
@@ -65,12 +73,16 @@ export class ImportServiceStack extends cdk.Stack {
         code: lambda.Code.fromAsset(path.join(__dirname, "lambda")),
         environment: {
           BUCKET_NAME: bucket.bucketName,
+          SQS_URL: catalogItemsQueue.queueUrl,
         },
       }
     );
 
     bucket.grantReadWrite(importProductsFileLambda);
     bucket.grantReadWrite(importFileParserLambda);
+
+    // Grant the Lambda permissions to send messages to the SQS queue
+    catalogItemsQueue.grantSendMessages(importFileParserLambda);
 
     // notification to lambda when new file is created in S3
     bucket.addEventNotification(

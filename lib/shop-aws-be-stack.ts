@@ -5,7 +5,14 @@ import * as path from "path";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from "constructs";
 
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+
 export class Task4ShopAwsBeStack extends cdk.Stack {
+  public readonly catalogQueue: sqs.Queue; // Expose the queue as a public property
+
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -19,6 +26,22 @@ export class Task4ShopAwsBeStack extends cdk.Stack {
       this,
       "ProductsTable",
       "products"
+    );
+
+    // Create SQS queue
+    const catalogItemsQueue = new sqs.Queue(this, "CatalogItemsQueue", {
+      queueName: "catalogItemsQueue",
+    });
+
+    // SNS topic for product creation
+    const createProductTopic = new sns.Topic(this, "createProductTopic", {
+      displayName: "Create Product Notifications",
+      topicName: "createProductTopic",
+    });
+
+    // Subscribe to the topic with an email endpoint
+    createProductTopic.addSubscription(
+      new subs.EmailSubscription("fin.freedom4devesh@gmail.com")
     );
 
     const lambdaFunction = new lambda.Function(this, "lambda-function", {
@@ -75,6 +98,25 @@ export class Task4ShopAwsBeStack extends cdk.Stack {
       }
     );
 
+    // Lmbda for catalogBatchProcess
+    const catalogBatchProcessLambda = new lambda.Function(
+      this,
+      "CatalogBatchProcessLambda",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: "catalogBatchProcess.main", // file: catalogBatchProcess.js, export function main
+        code: lambda.Code.fromAsset(path.join(__dirname, "lambda")),
+        memorySize: 1024,
+        timeout: cdk.Duration.seconds(5),
+        environment: {
+          PRODUCTS_TABLE: productsTable.tableName,
+          STOCK_TABLE: stockTable.tableName,
+          CREATE_PRODUCT_TOPIC_ARN: createProductTopic.topicArn,
+          REGION: "ap-south-1",
+        },
+      }
+    );
+
     // Grant Lambda read access to DynamoDB tables
     productsTable.grantReadData(productsLambda);
     stockTable.grantReadData(productsLambda);
@@ -86,6 +128,16 @@ export class Task4ShopAwsBeStack extends cdk.Stack {
     productsTable.grantReadData(createProductLambda);
     stockTable.grantWriteData(createProductLambda);
     stockTable.grantReadData(createProductLambda);
+
+    productsTable.grantWriteData(catalogBatchProcessLambda);
+    createProductTopic.grantPublish(catalogBatchProcessLambda);
+
+    // Grant the Lambda permissions to send messages to the SQS queue
+    catalogBatchProcessLambda.addEventSource(
+      new SqsEventSource(catalogItemsQueue, {
+        batchSize: 5, // process up to 5 messages at once
+      })
+    );
 
     const api = new apigateway.RestApi(this, "shop-aws-be-api", {
       restApiName: "Shop API Gateway",
@@ -131,6 +183,19 @@ export class Task4ShopAwsBeStack extends cdk.Stack {
       new apigateway.LambdaIntegration(productByIdLambda)
     );
 
+    // export queue to be used in other stacks
+    this.catalogQueue = catalogItemsQueue;
+
     new cdk.CfnOutput(this, "ApiUrl", { value: api.url });
+
+    // output queue URL
+    new cdk.CfnOutput(this, "CatalogQueueArn", {
+      value: catalogItemsQueue.queueArn,
+      exportName: "CatalogQueueArn",
+    });
+    new cdk.CfnOutput(this, "CatalogQueueUrl", {
+      value: catalogItemsQueue.queueUrl,
+      exportName: "CatalogQueueUrl",
+    });
   }
 }
