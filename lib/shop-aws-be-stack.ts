@@ -10,11 +10,19 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 
+import * as cognito from "aws-cdk-lib/aws-cognito";
+
+interface Task4ShopAwsBeStackProps extends cdk.StackProps {
+  userPool: cognito.IUserPool;
+}
+
 export class Task4ShopAwsBeStack extends cdk.Stack {
   public readonly catalogQueue: sqs.Queue; // Expose the queue as a public property
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: Task4ShopAwsBeStackProps) {
     super(scope, id, props);
+
+    const { userPool } = props;
 
     // DynamoDB tables
     const stockTable = dynamodb.Table.fromTableName(
@@ -154,12 +162,24 @@ export class Task4ShopAwsBeStack extends cdk.Stack {
       },
     });
 
+    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
+      this,
+      "my-authorizer",
+      {
+        authorizerName: "my-authorizer",
+        cognitoUserPools: [userPool],
+      }
+    );
+
     const lambdaIntegration = new apigateway.LambdaIntegration(lambdaFunction, {
       proxy: true,
     });
 
     const shopResource = api.root.addResource("shop");
-    shopResource.addMethod("GET", lambdaIntegration);
+    shopResource.addMethod("GET", lambdaIntegration, {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
     // shopResource.addCorsPreflight({
     //   allowOrigins: ["https://your-frontend-url.com"],
     //   allowMethods: ["GET", "OPTIONS"],

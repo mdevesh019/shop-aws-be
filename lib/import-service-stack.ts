@@ -5,13 +5,21 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as path from "path";
+import { AuthorizerStack } from "./authorizer-stack";
 import { Construct } from "constructs";
 
 import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as cognito from "aws-cdk-lib/aws-cognito";
+
+interface ImportServiceStackProps extends cdk.StackProps {
+  userPool: cognito.IUserPool;
+}
 
 export class ImportServiceStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: ImportServiceStackProps) {
     super(scope, id, props);
+
+    const { userPool } = props;
 
     const catalogItemsQueue = sqs.Queue.fromQueueArn(
       this,
@@ -104,10 +112,24 @@ export class ImportServiceStack extends cdk.Stack {
       },
     });
 
+    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
+      this,
+      "my-authorizer",
+      {
+        authorizerName: "my-authorizer",
+        cognitoUserPools: [userPool],
+      }
+    );
+
     const importProductResource = api.root.addResource("import");
+
     importProductResource.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(importProductsFileLambda)
+      new apigateway.LambdaIntegration(importProductsFileLambda),
+      {
+        authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      }
     );
 
     new cdk.CfnOutput(this, "ImportApiUrl", {
