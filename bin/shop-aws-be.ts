@@ -2,9 +2,17 @@
 import * as cdk from "aws-cdk-lib";
 import { Task4ShopAwsBeStack } from "../lib/shop-aws-be-stack";
 import { ImportServiceStack } from "../lib/import-service-stack";
+import { AuthorizerStack } from "../lib/authorizer-stack";
 
 const app = new cdk.App();
+
+const authStack = new AuthorizerStack(app, "AuthorizerStack", {
+  env: { region: "ap-south-1" },
+});
+
 new Task4ShopAwsBeStack(app, "Task4ShopAwsBeStack", {
+  env: { region: "ap-south-1" },
+  userPool: authStack.userPool,
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */
@@ -19,4 +27,5 @@ new Task4ShopAwsBeStack(app, "Task4ShopAwsBeStack", {
 
 new ImportServiceStack(app, "ImportServiceStack", {
   env: { region: "ap-south-1" },
+  userPool: authStack.userPool,
 });
